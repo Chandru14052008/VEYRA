@@ -24,20 +24,29 @@ export async function createPurchaseAction(formData: FormData) {
 
   const total = qty * unitCost;
 
-  const ops = [
-    prisma.purchase.create({
-      data: { businessId: business.id, productId, supplierId, qty, total, status },
-    }),
-  ];
+await prisma.$transaction(async (tx) => {
+  await tx.purchase.create({
+    data: {
+      businessId: business.id,
+      productId,
+      supplierId,
+      qty,
+      total,
+      status,
+    },
+  });
 
   // Only add to stock once the goods are actually received.
   if (status === "Received") {
-    ops.push(
-      prisma.product.update({ where: { id: productId }, data: { stock: { increment: qty }, cost: unitCost } })
-    );
+    await tx.product.update({
+      where: { id: productId },
+      data: {
+        stock: { increment: qty },
+        cost: unitCost,
+      },
+    });
   }
-
-  await prisma.$transaction(ops);
+});
   revalidatePath("/purchases");
   revalidatePath("/inventory");
   return { ok: true };
