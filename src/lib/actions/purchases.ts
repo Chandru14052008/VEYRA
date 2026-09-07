@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireBusiness } from "@/lib/auth";
+import type { Prisma } from "@prisma/client";
 
 const purchaseSchema = z.object({
   productId: z.string().min(1),
@@ -24,29 +25,19 @@ export async function createPurchaseAction(formData: FormData) {
 
   const total = qty * unitCost;
 
-await prisma.$transaction(async (tx) => {
-  await tx.purchase.create({
-    data: {
-      businessId: business.id,
-      productId,
-      supplierId,
-      qty,
-      total,
-      status,
-    },
-  });
+  const ops: Prisma.PrismaPromise<unknown>[] = [
+    prisma.purchase.create({
+      data: { businessId: business.id, productId, supplierId, qty, total, status },
+    }),
+  ];
 
-  // Only add to stock once the goods are actually received.
   if (status === "Received") {
-    await tx.product.update({
-      where: { id: productId },
-      data: {
-        stock: { increment: qty },
-        cost: unitCost,
-      },
-    });
+    ops.push(
+      prisma.product.update({ where: { id: productId }, data: { stock: { increment: qty }, cost: unitCost } })
+    );
   }
-});
+
+  await prisma.$transaction(ops);
   revalidatePath("/purchases");
   revalidatePath("/inventory");
   return { ok: true };
