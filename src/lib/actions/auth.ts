@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 import { hashPassword, verifyPassword, createSession, destroySession, requireBusiness } from "@/lib/auth";
 
 const registerSchema = z.object({
@@ -91,4 +92,28 @@ export async function completeOnboardingAction(formData: FormData) {
 export async function updateThemeAction(theme: "light" | "dark") {
   const business = await requireBusiness();
   await prisma.business.update({ where: { id: business.id }, data: { theme } });
+}
+const businessProfileSchema = z.object({
+  businessName: z.string().min(1),
+  businessType: z.enum(["vendor", "retailer", "manufacturer", "medium"]),
+  currency: z.string().min(1),
+  gstRegistered: z.string().optional(),
+});
+
+export async function updateBusinessProfileAction(formData: FormData) {
+  const business = await requireBusiness();
+  const parsed = businessProfileSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Please check the details." };
+
+  await prisma.business.update({
+    where: { id: business.id },
+    data: {
+      name: parsed.data.businessName,
+      businessType: parsed.data.businessType,
+      currency: parsed.data.currency,
+      gstRegistered: parsed.data.gstRegistered === "on",
+    },
+  });
+  revalidatePath("/settings");
+  return { ok: true };
 }
