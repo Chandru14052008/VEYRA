@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  business     Business?
+  createdAt    DateTime @default(now())
+}
+
+// businessType: "vendor" | "retailer" | "manufacturer" | "medium"
+model Business {
+  id            String   @id @default(cuid())
+  name          String
+  businessType  String   @default("retailer")
+  currency      String   @default("INR")
+  gstRegistered Boolean  @default(false)
+  theme         String   @default("light")
+  openingCash   Float    @default(0)
+  ownerId       String   @unique
+  owner         User     @relation(fields: [ownerId], references: [id])
+
+  products      Product[]
+  suppliers     Supplier[]
+  sales         Sale[]
+  purchases     Purchase[]
+  customers     Customer[]
+  expenses      Expense[]
+  boms          Bom[]
+  workOrders    WorkOrder[]
+  tenders       Tender[]
+
+  createdAt     DateTime @default(now())
+}
+
+// kind: "finished" | "raw" (raw materials only matter for manufacturers)
+model Product {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  sku        String
+  unit       String   @default("unit")
+  kind       String   @default("finished")
+  cost       Float
+  price      Float
+  stock      Float    @default(0)
+  avgDaily   Float    @default(0)
+  leadTime   Int      @default(3)
+  safety     Float    @default(0)
+
+  sales      Sale[]
+  purchases  Purchase[]
+  bomLines   BomLine[]
+  createdAt  DateTime @default(now())
+}
+
+model Supplier {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  onTime     Float    @default(90)
+  notes      String?
+
+  quotes     SupplierQuote[]
+  purchases  Purchase[]
+  createdAt  DateTime @default(now())
+}
+
+model SupplierQuote {
+  id          String   @id @default(cuid())
+  supplierId  String
+  supplier    Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  productName String
+  unitPrice   Float
+  moq         Float    @default(1)
+  delivery    Int      @default(3)
+  credit      Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Sale {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  qty        Float
+  total      Float
+  margin     Float
+  payment    String   @default("Cash")
+  createdAt  DateTime @default(now())
+}
+
+model Purchase {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  qty        Float
+  total      Float
+  status     String   @default("Pending")
+  createdAt  DateTime @default(now())
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  amount     Float    @default(0)
+  days       Int      @default(0)
+}
+
+model Expense {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category   String
+  amount     Float
+  createdAt  DateTime @default(now())
+}
+
+// Manufacturer feature: Bill of Materials
+model Bom {
+  id              String     @id @default(cuid())
+  businessId      String
+  business        Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name            String
+  outputProductId String
+  lines           BomLine[]
+  workOrders      WorkOrder[]
+}
+
+model BomLine {
+  id         String  @id @default(cuid())
+  bomId      String
+  bom        Bom     @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  qtyPerUnit Float
+}
+
+// status: "Planned" | "In Progress" | "Completed"
+model WorkOrder {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bomId      String
+  bom        Bom      @relation(fields: [bomId], references: [id])
+  quantity   Float
+  status     String   @default("Planned")
+  createdAt  DateTime @default(now())
+}
+
+model Tender {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  quantity     Float
+  sellingPrice Float
+  unitCost     Float
+  otherCosts   Float    @default(0)
+  deadline     DateTime?
+  createdAt    DateTime @default(now())
+}
