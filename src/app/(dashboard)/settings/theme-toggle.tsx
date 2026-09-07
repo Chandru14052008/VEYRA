@@ -7,10 +7,14 @@ import clsx from "clsx";
 
 export default function ThemeToggle({ currentTheme }: { currentTheme: "light" | "dark" }) {
   const [theme, setTheme] = useState(currentTheme);
+  const [pending, setPending] = useState(false);
 
   async function choose(t: "light" | "dark") {
+    if (pending) return;
+    setPending(true);
     setTheme(t);
     await updateThemeAction(t);
+    window.location.reload();
   }
 
   return (
@@ -19,6 +23,7 @@ export default function ThemeToggle({ currentTheme }: { currentTheme: "light" | 
         <button
           key={opt.id}
           onClick={() => choose(opt.id)}
+          disabled={pending}
           className={clsx(
             "flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg border",
             theme === opt.id ? "border-[#0EA5B7] bg-[#E3F6F8]" : "border-[#E4E8EF]"
