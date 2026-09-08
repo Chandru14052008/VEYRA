@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/db";
 import { requireBusiness } from "@/lib/auth";
 import { calcStockStatus, calcDaysRemaining, calcBusinessHealth, calcMargin, fmtINR } from "@/lib/calculations";
-import { Card, KPI, SectionTitle, EmptyState, Pill } from "@/components/ui";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Card, KPI, SectionTitle, EmptyState, Pill, Row } from "@/components/ui";
+import { AlertTriangle, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react";
 import SalesChart from "./sales-chart";
 
 export default async function DashboardPage() {
@@ -22,6 +22,13 @@ export default async function DashboardPage() {
   const receivables = customers.reduce((a, c) => a + c.amount, 0);
   const overdueCount = customers.filter((c) => c.days > 30).length;
   const lowStockCount = products.filter((p) => calcStockStatus(p).color !== "success").length;
+
+  // Profit, using the fetched sales/expenses as "this period"
+  const revenue = sales.reduce((a, s) => a + s.total, 0);
+  const cogs = sales.reduce((a, s) => a + s.total * (1 - s.margin / 100), 0);
+  const grossProfit = revenue - cogs;
+  const totalExpenses = expenses.reduce((a, e) => a + e.amount, 0);
+  const netProfit = grossProfit - totalExpenses;
 
   const thisWeekTotal = sales.reduce((a, s) => a + s.total, 0);
   const health = calcBusinessHealth(products, customers, { thisWeek: thisWeekTotal, lastWeek: thisWeekTotal * 0.9 });
@@ -47,7 +54,6 @@ export default async function DashboardPage() {
     });
   });
 
-  // Build a simple 7-point trend from the sales list we have (real data, not fabricated).
   const chartData = buildWeeklyTrend(sales);
 
   return (
@@ -68,6 +74,20 @@ export default async function DashboardPage() {
           ))}
         </div>
       )}
+
+      <SectionTitle>Net Profit</SectionTitle>
+      <Card className={netProfit >= 0 ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100"}>
+        <div className="flex items-center gap-2">
+          <div className="text-2xl font-extrabold">{fmtINR(netProfit)}</div>
+          {netProfit >= 0 ? <TrendingUp size={18} className="text-emerald-600" /> : <TrendingDown size={18} className="text-red-600" />}
+        </div>
+        <div className="text-xs text-[#5B6472] mt-1">Based on your last {sales.length} sales and logged expenses</div>
+        <div className="mt-3">
+          <Row label="Revenue" value={fmtINR(revenue)} />
+          <Row label="Gross profit" value={fmtINR(grossProfit)} />
+          <Row label="Expenses" value={fmtINR(totalExpenses)} />
+        </div>
+      </Card>
 
       <SectionTitle>Overview</SectionTitle>
       <div className="flex gap-2.5 flex-wrap">
