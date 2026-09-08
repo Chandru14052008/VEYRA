@@ -20,6 +20,9 @@ export async function createSaleAction(formData: FormData) {
   const { productId, qty, payment } = parsed.data;
   const product = await prisma.product.findFirst({ where: { id: productId, businessId: business.id } });
   if (!product) return { error: "Product not found." };
+  if (qty > product.stock) {
+    return { error: `Only ${product.stock} ${product.unit}${product.stock === 1 ? "" : "s"} in stock — cannot sell ${qty}.` };
+  }
 
   const total = product.price * qty;
   const margin = calcMargin(product);

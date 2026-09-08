@@ -21,13 +21,13 @@ export function calcMargin(p: { cost: number; price: number }) {
 }
 
 export function calcStockStatus(p: ProductLike): { label: string; color: "success" | "warn" | "danger" | "blue" } {
+  if (p.stock <= 0) return { label: "Out of stock", color: "danger" };
   const rol = calcReorderLevel(p);
   if (p.stock <= rol * 0.5) return { label: "Reorder now", color: "danger" };
   if (p.stock <= rol) return { label: "Low stock", color: "warn" };
   if (p.stock > rol * 3) return { label: "Overstocked", color: "blue" };
   return { label: "Healthy", color: "success" };
 }
-
 // EOQ = sqrt(2 * annual demand * ordering cost / holding cost per unit)
 export function calcEOQ(annualDemand: number, orderingCost: number, holdingCost: number) {
   return Math.round(Math.sqrt((2 * annualDemand * Math.max(orderingCost, 1)) / Math.max(holdingCost, 1)));
