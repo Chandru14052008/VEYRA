@@ -48,3 +48,23 @@ export async function deleteProductAction(id: string) {
   await prisma.product.deleteMany({ where: { id, businessId: business.id } });
   revalidatePath("/inventory");
 }
+const adjustStockSchema = z.object({
+  amount: z.coerce.number().refine((v) => v !== 0, "Enter a non-zero amount"),
+});
+
+export async function adjustStockAction(productId: string, formData: FormData) {
+  const business = await requireBusiness();
+  const parsed = adjustStockSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Please enter a valid quantity." };
+
+  const product = await prisma.product.findFirst({ where: { id: productId, businessId: business.id } });
+  if (!product) return { error: "Product not found." };
+
+  const newStock = product.stock + parsed.data.amount;
+  if (newStock < 0) return { error: "That would make stock negative." };
+
+  await prisma.product.update({ where: { id: productId }, data: { stock: newStock } });
+  revalidatePath("/inventory");
+  revalidatePath(`/inventory/${productId}`);
+  return { ok: true };
+}

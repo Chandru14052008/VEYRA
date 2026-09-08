@@ -5,6 +5,7 @@ import { requireBusiness } from "@/lib/auth";
 import { calcReorderLevel, calcDaysRemaining, calcMargin, calcStockStatus, calcEOQ, fmtINR } from "@/lib/calculations";
 import { Card, KPI, SectionTitle, Pill, Row } from "@/components/ui";
 import { ChevronLeft } from "lucide-react";
+import AdjustStockForm from "./adjust-stock-form";
 
 export default async function ProductDetailPage({ params }: { params: { id: string } }) {
   const business = await requireBusiness();
@@ -31,6 +32,9 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
         <KPI label="Days remaining" value={days.toFixed(1)} />
         <KPI label="Margin" value={calcMargin(p).toFixed(1) + "%"} />
       </div>
+
+      <SectionTitle>Manage stock</SectionTitle>
+      <AdjustStockForm productId={p.id} unit={p.unit} />
 
       <SectionTitle>Recommended order quantity</SectionTitle>
       <Card>
