@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import Link from "next/link";
 import { requireBusiness } from "@/lib/auth";
 import { calcStockStatus, calcDaysRemaining, calcBusinessHealth, calcMargin, fmtINR } from "@/lib/calculations";
 import { Card, KPI, SectionTitle, EmptyState, Pill, Row } from "@/components/ui";
@@ -98,6 +99,7 @@ export default async function DashboardPage() {
       </div>
 
       <SectionTitle>Business Health</SectionTitle>
+      <Link href="/health">
       <Card>
         <div className="flex items-center gap-3.5">
           <div className="w-[62px] h-[62px] rounded-full flex items-center justify-center flex-shrink-0"
@@ -114,6 +116,7 @@ export default async function DashboardPage() {
           </div>
         </div>
       </Card>
+      </Link>
 
       <SectionTitle>Sales trend</SectionTitle>
       <Card className="h-[180px] px-2 py-3">
