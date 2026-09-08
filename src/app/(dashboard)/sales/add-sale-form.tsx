@@ -9,6 +9,7 @@ export default function AddSaleForm({ products }: { products: { id: string; name
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [payment, setPayment] = useState("Cash");
 
   async function handleSubmit(formData: FormData) {
     if (pending) return;
@@ -17,7 +18,7 @@ export default function AddSaleForm({ products }: { products: { id: string; name
     const res = await createSaleAction(formData);
     setPending(false);
     if (res?.error) setError(res.error);
-    else setOpen(false);
+    else { setOpen(false); setPayment("Cash"); }
   }
 
   if (!open) {
@@ -51,11 +52,22 @@ export default function AddSaleForm({ products }: { products: { id: string; name
             <input name="qty" type="number" min={1} step="any" defaultValue={1} required className={inputClass} disabled={pending} />
           </Field>
           <Field label="Payment">
-            <select name="payment" className={inputClass} disabled={pending}>
+            <select
+              name="payment"
+              value={payment}
+              onChange={(e) => setPayment(e.target.value)}
+              className={inputClass}
+              disabled={pending}
+            >
               {["Cash", "UPI", "Card", "Bank transfer", "Credit"].map((p) => <option key={p}>{p}</option>)}
             </select>
           </Field>
         </div>
+        {payment === "Credit" && (
+          <Field label="Customer name (for creditor record)">
+            <input name="customerName" required className={inputClass} disabled={pending} placeholder="e.g. Ravi Traders" />
+          </Field>
+        )}
         {error && <div className="text-xs text-red-600 mb-2">{error}</div>}
         <button
           type="submit"
