@@ -8,6 +8,7 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#0B1324] text-white flex flex-col items-center justify-center px-6 text-center">
+      <img src="/logo.png" alt="VEYRA" className="h-14 w-14 rounded-2xl object-cover mb-3" />
       <div className="text-3xl font-extrabold tracking-tight mb-2">VEYRA</div>
       <div className="text-[#8D96A8] mb-8">Know. Decide. Grow.</div>
       <h1 className="text-2xl font-bold max-w-sm leading-snug">
